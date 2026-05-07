@@ -1,11 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Nenúfar Bank — Inicio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
+    <div id="sidebar-container"></div>
     
+    <main class="main">
+        <div class="top-bar">
+            <h1 class="page-title">Buenos días, <em id="greeting-name">María</em></h1>
+            <span class="date-tag" id="current-date"></span>
+        </div>
+
+        <div class="balance-hero">
+            <div class="balance-label">Saldo disponible</div>
+            <div class="balance-amount"><span>$</span><span id="saldo-disponible">0.00</span></div>
+            <div class="balance-sub">Sincronizado con API bank · <span id="saldo-status">Cargando...</span></div>
+            <div class="balance-actions">
+                <a href="html/tienda.html" class="btn btn-primary">Ir a la tienda</a>
+                <a href="html/gastos.html" class="btn btn-ghost">Ver gastos</a>
+            </div>
+            <div class="tamalbit-badge" id="tamalbit-badge">
+                <div class="tb-label">Mis Tamalbits</div>
+                <div class="tb-count" id="tb-count">0</div>
+                <div class="tb-name">✦ Tamalbit</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">Resumen del mes</div>
+                <div class="stat-row">
+                    <div class="stat-item">
+                        <div class="stat-val" id="total-gastado">$0.00</div>
+                        <div class="stat-desc">Total gastado</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-val" id="total-transacciones">0</div>
+                        <div class="stat-desc">Transacciones</div>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <div class="stat-val" id="promedio-gasto">$0.00</div>
+                        <div class="stat-desc">Promedio</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Por categoría</div>
+                <div class="cat-grid" id="categorias-grid"></div>
+            </div>
+        </div>
+
+        <div class="card card-full">
+            <div class="card-title">Últimas transacciones</div>
+            <div class="txn-list" id="ultimas-transacciones">
+                <p style="color:#aaa; text-align:center; padding:20px;">Cargando...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="./js/main.js"></script>
 </body>
 </html>
