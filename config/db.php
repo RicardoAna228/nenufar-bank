@@ -1,10 +1,9 @@
 <?php
-// Nenúfar Bank - Configuración de conexión a la base de datos
-
-define('DB_HOST', 'localhost'); 
+// Nenúfar Bank - Configuración de base de datos
+define('DB_HOST', 'localhost');
 define('DB_NAME', 'nenufar_bank');
-define('DB_USER', 'root'); // Cambia por tu usuario
-define('DB_PASS', '');     // Cambia por tu contraseña
+define('DB_USER', 'root');      // Cambia si usas otro usuario
+define('DB_PASS', '');           // Cambia si tienes contraseña
 
 try {
     $pdo = new PDO(
@@ -18,10 +17,9 @@ try {
         ]
     );
 } catch (PDOException $e) {
-    // En producción, registra el error en un log, no lo muestres al usuario.
-    die("Error de conexión a la base de datos. Por favor, contacta al administrador.");
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode(['error' => 'Error de conexión a la base de datos']);
+    exit;
 }
-
-// Configuración de la API externa (Bank Service)
-define('API_BASE_URL', 'http://localhost:8083'); // Ajusta si es necesario
 ?>
