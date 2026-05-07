@@ -57,4 +57,4 @@ VALUES
 ('/images/Hamburguesa.jpg', 'Hamburguesa', 'Hamburguesa doble carne', 18000, 1, TRUE),
 ('/images/audifonos.jpg', 'Audifonos Bluetooth', 'Audifonos inalambricos', 95000, 2, TRUE),
 ('/images/lampara.jpg', 'Lampara LED', 'Lampara para escritorio', 45000, 3, TRUE),
-('/images/camisa_negra.jpg','Camiseta Negra', 'Camiseta algodon unisex', 35000, 4, TRUE);
+('/images/camisa_negra.png','Camiseta Negra', 'Camiseta algodon unisex', 35000, 4, TRUE);
