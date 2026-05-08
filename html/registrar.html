@@ -1,23 +1,253 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nenúfar Bank — Registrar Gasto</title>
-  <link rel="stylesheet" href="../css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nenúfar Bank — Registrar Gasto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
-  <div id="sidebar-container"></div>
-  <main class="main">
-    <div class="top-bar">
-      <h1 class="page-title">Registrar Gasto</h1>
-      <span class="date-tag" id="current-date"></span>
-    </div>
-    <div class="card">
-      <div class="card-title">Registrar nuevo gasto</div>
-      <p>Usa este formulario para anotar tus gastos.</p>
-    </div>
-  </main>
-  <script src="../js/main.js"></script>
+    <div id="sidebar-container"></div>
+    
+    <main class="main">
+        <div class="top-bar">
+            <h1 class="page-title">Registrar <em>gasto</em></h1>
+            <div class="balance-pill">
+                <div class="bp-dot"></div>
+                <span class="bp-label">Saldo disponible</span>
+                <span class="bp-val" id="saldo-pill">$0.00</span>
+            </div>
+        </div>
+
+        <div class="layout">
+            <div class="form-card">
+                <div class="form-card-header">
+                    <div class="form-card-icon">✎</div>
+                    <div>
+                        <div class="form-card-title">Nuevo gasto</div>
+                        <div class="form-card-sub">El monto se descontará vía la API bank</div>
+                    </div>
+                </div>
+                <div class="form-body">
+                    <div class="field">
+                        <label class="field-label">Usuario</label>
+                        <input type="text" id="campo-usuario" value="María R.">
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Producto</label>
+                        <select id="campo-producto" onchange="verificarTamalbit()">
+                            <option value="">Selecciona un producto...</option>
+                        </select>
+                        <div class="tamalbit-notice" id="tamalbit-notice">
+                            <span class="tn-icon">✦</span>
+                            <span class="tn-text">¡Este producto otorga Tamalbits! Por cada <strong>$10</strong> gastados recibirás <strong id="tb-preview">0</strong> Tamalbit(s).</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Monto del gasto</label>
+                        <div class="amount-wrap">
+                            <span class="amount-prefix">$</span>
+                            <input type="number" id="campo-monto" placeholder="0.00" min="0.01" step="0.01" oninput="actualizarPreview()">
+                        </div>
+                        <div class="saldo-warning" id="saldo-warning">
+                            <span>⚠️</span>
+                            <span class="sw-text">El monto supera el saldo disponible.</span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Categoría</label>
+                        <div class="cat-grid-form">
+                            <div class="cat-option selected" data-cat="alimentacion" onclick="seleccionarCat(this)">
+                                <span class="co-label">Alimentación</span><span class="co-check">✓</span>
+                            </div>
+                            <div class="cat-option" data-cat="servicios" onclick="seleccionarCat(this)">
+                                <span class="co-label">Servicios públicos</span><span class="co-check">✓</span>
+                            </div>
+                            <div class="cat-option" data-cat="transporte" onclick="seleccionarCat(this)">
+                                <span class="co-label">Transporte</span><span class="co-check">✓</span>
+                            </div>
+                            <div class="cat-option" data-cat="otros" onclick="seleccionarCat(this)">
+                                <span class="co-label">Otros</span><span class="co-check">✓</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <div class="field" style="margin-bottom:0">
+                            <label class="field-label">Fecha</label>
+                            <input type="date" id="campo-fecha">
+                        </div>
+                        <div class="field" style="margin-bottom:0">
+                            <label class="field-label">Hora</label>
+                            <input type="time" id="campo-hora">
+                        </div>
+                    </div>
+                    <div class="field" style="margin-top:24px">
+                        <label class="field-label">Descripción <span style="color:#ccc;font-size:10px;text-transform:none;letter-spacing:0">(opcional)</span></label>
+                        <textarea id="campo-descripcion" placeholder="Agrega una nota sobre este gasto…"></textarea>
+                    </div>
+                </div>
+                <div class="form-footer">
+                    <button class="btn-clear" onclick="limpiarFormulario()">Limpiar</button>
+                    <button class="btn-submit" id="btn-submit" onclick="registrarGasto()">
+                        <span>Confirmar gasto</span> <span>→</span>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="panel-card">
+                    <div class="panel-title">Vista previa de saldo</div>
+                    <div class="saldo-display">
+                        <div class="sd-before-label">Saldo actual</div>
+                        <div class="sd-before" id="sd-saldo">$0.00</div>
+                        <div class="sd-arrow">↓</div>
+                        <div class="sd-after-label">Saldo tras el gasto</div>
+                        <div class="sd-after" id="sd-after">$0.00</div>
+                        <div class="sd-divider"></div>
+                        <div class="sd-gasto-label">Monto a descontar</div>
+                        <div class="sd-gasto" id="sd-monto">— $0.00</div>
+                    </div>
+                </div>
+                <div class="panel-card" id="panel-tamalbits" style="display:none">
+                    <div class="panel-title">Tamalbits a ganar</div>
+                    <div style="text-align:center;font-family:var(--font-display);font-size:30px;color:var(--green);">
+                        <span id="tb-panel">0</span> ✦
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="../js/main.js"></script>
+    <script>
+        let saldo = 0;
+        const ahora = new Date();
+        document.getElementById('campo-fecha').value = ahora.toISOString().slice(0, 10);
+        document.getElementById('campo-hora').value = ahora.toTimeString().slice(0, 5);
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            saldo = await APP.getSaldo();
+            document.getElementById('saldo-pill').textContent = APP.formatCurrency(saldo);
+            document.getElementById('sd-saldo').textContent = APP.formatCurrency(saldo);
+            actualizarPreview();
+            await cargarProductos();
+        });
+
+        async function cargarProductos() {
+            const res = await fetch('api/productos.php');
+            const productos = await res.json();
+            const select = document.getElementById('campo-producto');
+            productos.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.dataset.precio = p.precio;
+                opt.dataset.tamalbit = p.otorga_tamalbit;
+                opt.textContent = `${p.emoji} ${p.nombre} - $${parseFloat(p.precio).toFixed(2)}`;
+                select.appendChild(opt);
+            });
+        }
+
+        function actualizarPreview() {
+            const productoSelect = document.getElementById('campo-producto');
+            const montoManual = parseFloat(document.getElementById('campo-monto').value) || 0;
+            let monto = montoManual;
+            
+            // Si no hay monto manual, usar precio del producto seleccionado
+            if (!montoManual && productoSelect.selectedIndex > 0) {
+                monto = parseFloat(productoSelect.options[productoSelect.selectedIndex].dataset.precio);
+            }
+            
+            const restante = saldo - monto;
+            document.getElementById('sd-monto').textContent = `— ${APP.formatCurrency(monto)}`;
+            document.getElementById('sd-after').textContent = restante >= 0 ? APP.formatCurrency(restante) : APP.formatCurrency(0);
+            document.getElementById('sd-after').style.color = restante < 0 ? 'var(--error)' : 'var(--rhodo)';
+            
+            document.getElementById('saldo-warning').classList.toggle('visible', monto > saldo);
+            document.getElementById('btn-submit').disabled = monto > saldo || monto <= 0;
+            verificarTamalbit();
+        }
+
+        function verificarTamalbit() {
+            const productoSelect = document.getElementById('campo-producto');
+            const monto = parseFloat(document.getElementById('campo-monto').value) || 
+                         (productoSelect.selectedIndex > 0 ? parseFloat(productoSelect.options[productoSelect.selectedIndex].dataset.precio) : 0);
+            const otorga = productoSelect.selectedIndex > 0 && productoSelect.options[productoSelect.selectedIndex].dataset.tamalbit == '1';
+            
+            const notice = document.getElementById('tamalbit-notice');
+            const panel = document.getElementById('panel-tamalbits');
+            
+            if (otorga && monto > 0) {
+                const tb = Math.floor(monto / 10);
+                document.getElementById('tb-preview').textContent = tb;
+                document.getElementById('tb-panel').textContent = tb;
+                notice.classList.add('visible');
+                panel.style.display = 'block';
+            } else {
+                notice.classList.remove('visible');
+                panel.style.display = 'none';
+            }
+        }
+
+        function seleccionarCat(el) {
+            document.querySelectorAll('.cat-option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+
+        function limpiarFormulario() {
+            document.getElementById('campo-producto').selectedIndex = 0;
+            document.getElementById('campo-monto').value = '';
+            document.getElementById('campo-descripcion').value = '';
+            document.querySelectorAll('.cat-option').forEach((o, i) => o.classList.toggle('selected', i === 0));
+            actualizarPreview();
+        }
+
+        async function registrarGasto() {
+            const usuario = document.getElementById('campo-usuario').value.trim();
+            const productoSelect = document.getElementById('campo-producto');
+            const producto_id = productoSelect.value;
+            const monto = parseFloat(document.getElementById('campo-monto').value) || 
+                         (productoSelect.selectedIndex > 0 ? parseFloat(productoSelect.options[productoSelect.selectedIndex].dataset.precio) : 0);
+            const categoria = document.querySelector('.cat-option.selected')?.dataset.cat || 'alimentacion';
+            const descripcion = document.getElementById('campo-descripcion').value.trim();
+
+            if (!usuario || !producto_id || !monto) {
+                APP.showToast('Completa todos los campos obligatorios.', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.innerHTML = 'Procesando...';
+
+            try {
+                const res = await fetch('api/gasto.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ producto_id, usuario, descripcion, monto, categoria })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    APP.showToast('✓ Gasto registrado exitosamente.', 'success');
+                    saldo = data.nuevo_saldo;
+                    document.getElementById('saldo-pill').textContent = APP.formatCurrency(saldo);
+                    document.getElementById('sd-saldo').textContent = APP.formatCurrency(saldo);
+                    limpiarFormulario();
+                } else {
+                    APP.showToast(data.message || 'Error al registrar el gasto.', 'error');
+                }
+            } catch (e) {
+                APP.showToast('Error de conexión.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Confirmar gasto</span> <span>→</span>';
+                actualizarPreview();
+            }
+        }
+    </script>
 </body>
 </html>

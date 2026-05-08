@@ -1,23 +1,137 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nenúfar Bank — Mis Gastos</title>
-  <link rel="stylesheet" href="../css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nenúfar Bank — Mis Gastos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
-  <div id="sidebar-container"></div>
-  <main class="main">
-    <div class="top-bar">
-      <h1 class="page-title">Mis Gastos</h1>
-      <span class="date-tag" id="current-date"></span>
-    </div>
-    <div class="card">
-      <div class="card-title">Resumen de gastos</div>
-      <p>Aquí podrás ver tus gastos registrados y revisar el historial.</p>
-    </div>
-  </main>
-  <script src="../js/main.js"></script>
+    <div id="sidebar-container"></div>
+    
+    <main class="main">
+        <div class="top-bar">
+            <h1 class="page-title">Mis <em>gastos</em></h1>
+            <div class="search-box">
+                <span>🔍</span>
+                <input type="text" id="search-input" placeholder="Buscar gasto..." oninput="filtrarGastos()">
+            </div>
+        </div>
+
+        <div class="summary-bar">
+            <div class="sum-card highlight">
+                <div class="sum-label">Saldo actual (API)</div>
+                <div class="sum-val" id="saldo-actual">$0.00</div>
+                <div class="sum-sub">En tiempo real</div>
+            </div>
+            <div class="sum-card">
+                <div class="sum-label">Total gastado (mes)</div>
+                <div class="sum-val" id="total-mes">$0.00</div>
+                <div class="sum-sub"><span id="num-transacciones">0</span> transacciones</div>
+            </div>
+            <div class="sum-card">
+                <div class="sum-label">Mayor gasto</div>
+                <div class="sum-val" id="mayor-gasto">$0.00</div>
+                <div class="sum-sub" id="mayor-gasto-nombre">-</div>
+            </div>
+            <div class="sum-card">
+                <div class="sum-label">Tamalbits ganados</div>
+                <div class="sum-val" id="total-tamalbits">0 ✦</div>
+                <div class="sum-sub">En orejas de pollo</div>
+            </div>
+        </div>
+
+        <div class="table-header">
+            <div class="table-title">Historial de transacciones</div>
+        </div>
+
+        <div class="expenses-table" id="expenses-table">
+            <div class="et-head">
+                <div></div>
+                <div>Producto / Descripción</div>
+                <div>Categoría</div>
+                <div>Fecha</div>
+                <div>Monto</div>
+                <div>Tamalbits</div>
+            </div>
+            <div id="expenses-body"></div>
+        </div>
+    </main>
+
+    <script src="../js/main.js"></script>
+    <script>
+        let todosGastos = [];
+        const catIcons = { alimentacion: '🍽️', servicios: '⚡', transporte: '🚌', otros: '📦' };
+        const catBadges = { alimentacion: 'cb-food', servicios: 'cb-serv', transporte: 'cb-trans', otros: 'cb-other' };
+        const catEmojis = { alimentacion: '🍽️', servicios: '⚡', transporte: '🚌', otros: '📦' };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cargarDatos();
+        });
+
+        async function cargarDatos() {
+            try {
+                // Saldo
+                const saldo = await APP.getSaldo();
+                document.getElementById('saldo-actual').textContent = APP.formatCurrency(saldo);
+
+                // Estadísticas
+                const statsRes = await fetch(`api/estadisticas.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                const stats = await statsRes.json();
+                document.getElementById('total-mes').textContent = APP.formatCurrency(stats.total_mes);
+                document.getElementById('num-transacciones').textContent = stats.transacciones;
+                if (stats.mayor_gasto) {
+                    document.getElementById('mayor-gasto').textContent = APP.formatCurrency(stats.mayor_gasto.monto);
+                    document.getElementById('mayor-gasto-nombre').textContent = stats.mayor_gasto.nombre;
+                }
+
+                // Tamalbits
+                const tbRes = await fetch(`api/tamalbits.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                const tbData = await tbRes.json();
+                document.getElementById('total-tamalbits').textContent = `${tbData.total} ✦`;
+
+                // Historial
+                const histRes = await fetch(`api/historial.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                todosGastos = await histRes.json();
+                renderizarGastos(todosGastos);
+
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+            }
+        }
+
+        function renderizarGastos(gastos) {
+            const body = document.getElementById('expenses-body');
+            if (gastos.length === 0) {
+                body.innerHTML = '<p style="padding:24px;text-align:center;color:#aaa;">No se encontraron gastos.</p>';
+                return;
+            }
+            body.innerHTML = gastos.map(g => `
+                <div class="et-row">
+                    <div class="et-icon">${g.emoji}</div>
+                    <div>
+                        <div class="et-name">${g.nombre}</div>
+                        <div class="et-desc">${g.descripcion || 'Sin descripción'} · ${APP.currentUser}</div>
+                    </div>
+                    <div><span class="cat-badge ${catBadges[g.categoria]}">${catEmojis[g.categoria]} ${APP.ucfirst(g.categoria)}</span></div>
+                    <div class="et-date">${APP.formatDate(g.fecha)}</div>
+                    <div class="et-amount">${APP.formatCurrency(g.monto)}</div>
+                    <div>${g.tamalbits_ganados > 0 ? `<span class="tb-pill">✦ +${g.tamalbits_ganados}</span>` : '—'}</div>
+                </div>
+            `).join('');
+        }
+
+        function filtrarGastos() {
+            const busqueda = document.getElementById('search-input').value.toLowerCase();
+            const filtrados = todosGastos.filter(g => 
+                g.nombre.toLowerCase().includes(busqueda) || 
+                (g.descripcion && g.descripcion.toLowerCase().includes(busqueda))
+            );
+            renderizarGastos(filtrados);
+        }
+    </script>
 </body>
 </html>

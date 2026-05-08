@@ -69,5 +69,86 @@
     </main>
 
     <script src="./js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Fecha actual
+            const fecha = new Date();
+            document.getElementById('current-date').textContent = 
+                fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            
+            const nombre = APP.currentUser.split(' ')[0];
+            document.getElementById('greeting-name').textContent = nombre;
+            document.getElementById('user-name').textContent = APP.currentUser;
+            document.getElementById('user-initials').textContent = 
+                APP.currentUser.split(' ').map(n => n[0]).join('').toUpperCase();
+
+            await cargarDashboard();
+        });
+
+        async function cargarDashboard() {
+            try {
+                // Obtener saldo de la API
+                const saldo = await APP.getSaldo();
+                document.getElementById('saldo-disponible').textContent = APP.formatCurrency(saldo);
+                document.getElementById('saldo-status').textContent = 'Actualizado hace un momento';
+                document.getElementById('saldo-status').style.color = '#ffffff73';
+
+                // Estadísticas
+                const statsRes = await fetch(`api/estadisticas.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                const stats = await statsRes.json();
+                document.getElementById('total-gastado').textContent = APP.formatCurrency(stats.total_mes);
+                document.getElementById('total-transacciones').textContent = stats.transacciones;
+                document.getElementById('promedio-gasto').textContent = APP.formatCurrency(stats.promedio);
+
+                // Categorías
+                const catIcons = { alimentacion: '🍽️', servicios: '⚡', transporte: '🚌', otros: '📦' };
+                let catHTML = '';
+                for (const [cat, total] of Object.entries(stats.categorias)) {
+                    catHTML += `
+                        <div class="cat-pill cp-${cat}">
+                            <span class="cp-icon">${catIcons[cat]}</span>
+                            <div>
+                                <div class="cp-label">${APP.ucfirst(cat)}</div>
+                                <div class="cp-amount">${APP.formatCurrency(total)}</div>
+                            </div>
+                        </div>`;
+                }
+                document.getElementById('categorias-grid').innerHTML = catHTML;
+
+                // Últimas transacciones
+                const histRes = await fetch(`api/historial.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                const historial = await histRes.json();
+                const ultimas = historial.slice(0, 4);
+                let txnHTML = '';
+                if (ultimas.length === 0) {
+                    txnHTML = '<p style="color:#aaa; text-align:center; padding:20px;">Aún no has realizado ninguna transacción.</p>';
+                } else {
+                    ultimas.forEach(txn => {
+                        txnHTML += `
+                            <div class="txn-item">
+                                <div class="txn-icon" style="background:rgba(206,134,144,0.15)">${txn.emoji}</div>
+                                <div class="txn-info">
+                                    <div class="txn-name">${txn.nombre}</div>
+                                    <div class="txn-cat">${APP.ucfirst(txn.categoria)}</div>
+                                </div>
+                                <div style="text-align:right">
+                                    <div class="txn-amount">−${APP.formatCurrency(txn.monto)}</div>
+                                    <div class="txn-date">${APP.formatDate(txn.fecha)}</div>
+                                </div>
+                            </div>`;
+                    });
+                }
+                document.getElementById('ultimas-transacciones').innerHTML = txnHTML;
+
+                // Tamalbits
+                const tbRes = await fetch(`api/tamalbits.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                const tbData = await tbRes.json();
+                document.getElementById('tb-count').textContent = tbData.total;
+
+            } catch (error) {
+                console.error('Error cargando dashboard:', error);
+            }
+        }
+    </script>
 </body>
 </html>

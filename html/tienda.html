@@ -1,23 +1,208 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nenúfar Bank — Tienda</title>
-  <link rel="stylesheet" href="../css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nenúfar Bank — Tienda</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
 </head>
 <body>
-  <div id="sidebar-container"></div>
-  <main class="main">
-    <div class="top-bar">
-      <h1 class="page-title">Tienda</h1>
-      <span class="date-tag" id="current-date"></span>
+    <div id="sidebar-container"></div>
+    
+    <main class="main">
+        <div class="top-bar">
+            <h1 class="page-title">La <em>tienda</em></h1>
+            <div class="balance-pill">
+                <div class="bp-dot"></div>
+                <span class="bp-label">Saldo disponible</span>
+                <span class="bp-val" id="saldo-pill">$0.00</span>
+            </div>
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" data-filter="todos">Todos</button>
+            <button class="filter-btn" data-filter="alimentacion">Alimentación</button>
+            <button class="filter-btn" data-filter="servicios">Servicios públicos</button>
+            <button class="filter-btn" data-filter="transporte">Transporte</button>
+            <button class="filter-btn" data-filter="otros">Otros</button>
+        </div>
+
+        <div class="products-grid" id="products-grid"></div>
+    </main>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div class="modal-product-emoji" id="m-emoji"></div>
+            <div class="modal-product-name" id="m-name"></div>
+            <div class="modal-product-cat" id="m-cat"></div>
+            <div class="modal-product-desc" id="m-desc"></div>
+            <div class="modal-detail">
+                <div class="md-item">
+                    <div class="md-val" id="m-price"></div>
+                    <div class="md-label">Precio</div>
+                </div>
+                <div class="md-item">
+                    <div class="md-val" id="m-saldo"></div>
+                    <div class="md-label">Saldo disponible</div>
+                </div>
+            </div>
+            <div class="modal-tamalbit-info" id="m-tamalbit-info" style="display:none;">
+                ✦ Este plato otorga 1 Tamalbit por cada $10 gastados
+            </div>
+            <div class="modal-input-group">
+                <label>Usuario</label>
+                <input type="text" id="modal-usuario" value="María R." placeholder="Tu nombre">
+            </div>
+            <div class="modal-input-group">
+                <label>Descripción (opcional)</label>
+                <input type="text" id="modal-descripcion" placeholder="¿Para qué es este gasto?">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="btn-confirm" id="btn-confirm" onclick="confirmarCompra()">Confirmar pago</button>
+            </div>
+        </div>
     </div>
-    <div class="card">
-      <div class="card-title">Productos</div>
-      <p>Explora la tienda y adquiere productos con tus Tamalbits.</p>
-    </div>
-  </main>
-  <script src="../js/main.js"></script>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="../js/main.js"></script>
+    <script>
+        let productos = [];
+        let productoSeleccionado = null;
+        let saldoActual = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cargarSaldo();
+            await cargarProductos();
+            configurarFiltros();
+        });
+
+        async function cargarSaldo() {
+            saldoActual = await APP.getSaldo();
+            document.getElementById('saldo-pill').textContent = APP.formatCurrency(saldoActual);
+        }
+
+        async function cargarProductos() {
+            try {
+                const res = await fetch('api/productos.php');
+                productos = await res.json();
+                renderizarProductos(productos);
+            } catch (error) {
+                console.error('Error cargando productos:', error);
+            }
+        }
+
+        function renderizarProductos(lista) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = lista.map(p => `
+                <div class="product-card ${p.otorga_tamalbit == 1 ? 'featured' : ''}" 
+                     data-id="${p.id}" data-categoria="${p.categoria}"
+                     onclick="openModal(${p.id})">
+                    <div class="product-img" style="background:linear-gradient(135deg,rgba(206,134,144,0.18),rgba(110,34,54,0.1))">
+                        ${p.emoji}
+                        ${p.otorga_tamalbit == 1 ? '<span class="tamalbit-tag">✦ Gana Tamalbits</span>' : ''}
+                    </div>
+                    <div class="product-body">
+                        <div class="product-cat">${APP.ucfirst(p.categoria)}</div>
+                        <div class="product-name">${p.nombre}</div>
+                        <div class="product-desc">${p.descripcion}</div>
+                        <div class="product-footer">
+                            <div class="product-price"><span>$</span>${parseFloat(p.precio).toFixed(2)}</div>
+                            <button class="buy-btn" onclick="event.stopPropagation(); openModal(${p.id})">Comprar</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openModal(id) {
+            productoSeleccionado = productos.find(p => p.id == id);
+            if (!productoSeleccionado) return;
+
+            document.getElementById('m-emoji').textContent = productoSeleccionado.emoji;
+            document.getElementById('m-name').textContent = productoSeleccionado.nombre;
+            document.getElementById('m-cat').textContent = APP.ucfirst(productoSeleccionado.categoria);
+            document.getElementById('m-desc').textContent = productoSeleccionado.descripcion;
+            document.getElementById('m-price').textContent = APP.formatCurrency(productoSeleccionado.precio);
+            document.getElementById('m-saldo').textContent = APP.formatCurrency(saldoActual);
+            document.getElementById('m-tamalbit-info').style.display = 
+                productoSeleccionado.otorga_tamalbit == 1 ? 'flex' : 'none';
+            document.getElementById('modal').classList.add('open');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('open');
+            productoSeleccionado = null;
+        }
+
+        async function confirmarCompra() {
+            if (!productoSeleccionado) return;
+            const btn = document.getElementById('btn-confirm');
+            btn.disabled = true;
+            btn.innerHTML = 'Procesando...';
+
+            const usuario = document.getElementById('modal-usuario').value.trim();
+            const descripcion = document.getElementById('modal-descripcion').value.trim();
+
+            if (!usuario) {
+                APP.showToast('⚠️ Debes ingresar un nombre de usuario.', 'warning');
+                btn.disabled = false;
+                btn.innerHTML = 'Confirmar pago';
+                return;
+            }
+
+            try {
+                const res = await fetch('api/gasto.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        producto_id: productoSeleccionado.id,
+                        usuario: usuario,
+                        descripcion: descripcion
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    let msg = '✓ ¡Compra exitosa!';
+                    if (data.tamalbits > 0) msg += ` +${data.tamalbits} Tamalbit(s) ✦`;
+                    APP.showToast(msg, 'success');
+                    
+                    // Actualizar saldo
+                    saldoActual = data.nuevo_saldo;
+                    document.getElementById('saldo-pill').textContent = APP.formatCurrency(saldoActual);
+                    
+                    setTimeout(closeModal, 1500);
+                } else {
+                    APP.showToast(data.message || 'Error al procesar la compra.', 'error');
+                }
+            } catch (error) {
+                APP.showToast('Error de conexión.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Confirmar pago';
+            }
+        }
+
+        function configurarFiltros() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const filter = btn.dataset.filter;
+                    const filtrados = filter === 'todos' 
+                        ? productos 
+                        : productos.filter(p => p.categoria === filter);
+                    renderizarProductos(filtrados);
+                });
+            });
+        }
+    </script>
 </body>
 </html>
