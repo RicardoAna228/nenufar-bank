@@ -106,7 +106,13 @@ async function loadSidebar() {
             // Mostrar nombre del usuario real en el sidebar
             const userNameEl = sidebarContainer.querySelector('.user-name, .nombre-usuario, [class*="user"] span, [class*="nombre"]');
             if (userNameEl) userNameEl.textContent = APP.currentUser;
-        }
+
+            const nameEl = sidebarContainer.querySelector('#user-name');
+            const initialsEl = sidebarContainer.querySelector('#user-initials');
+            if (nameEl) nameEl.textContent = APP.currentUser;
+                if (initialsEl) initialsEl.textContent = APP.currentUser
+                    .split(' ').map(n => n[0]).join('').toUpperCase();
+            }
     } catch (error) {
         console.error('Error al cargar sidebar:', error);
     }
