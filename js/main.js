@@ -23,7 +23,7 @@ const APP = {
     },
 
     // Formatear moneda
-    fformatCurrency(amount) {
+    formatCurrency(amount) {
         const num = parseFloat(amount);
         if (isNaN(num)) return '$0.00';
          return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');

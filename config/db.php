@@ -3,7 +3,7 @@
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'nenufar_bank');
 define('DB_USER', 'root');      // Cambia si usas otro usuario
-define('DB_PASS', 'your-password');           // Cambia si tienes contraseña
+define('DB_PASS', '');          // Cambia si tienes contraseña
 
 try {
     $pdo = new PDO(
@@ -19,7 +19,7 @@ try {
 } catch (PDOException $e) {
     header('Content-Type: application/json');
     http_response_code(500);
-    echo json_encode(['error' => 'Error de conexión a la base de datos']);
+    echo json_encode(['error' => $e->getMessage()]);
     exit;
 }
 ?>
