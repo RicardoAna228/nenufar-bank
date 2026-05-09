@@ -99,6 +99,12 @@
                 // Estadísticas — ahora con usuario_documento
                 const statsRes = await fetch(`api/estadisticas.php?usuario_documento=${APP.currentDocumento}`);
                 const stats = await statsRes.json();
+
+                if (stats.error) {
+                    console.error('Error en estadisticas:', stats.error);
+                    return;
+                }
+
                 document.getElementById('total-gastado').textContent = APP.formatCurrency(stats.total_mes);
                 document.getElementById('total-transacciones').textContent = stats.transacciones;
                 document.getElementById('promedio-gasto').textContent = APP.formatCurrency(stats.promedio);

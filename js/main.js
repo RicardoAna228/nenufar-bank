@@ -23,8 +23,10 @@ const APP = {
     },
 
     // Formatear moneda
-    formatCurrency(amount) {
-        return '$' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    fformatCurrency(amount) {
+        const num = parseFloat(amount);
+        if (isNaN(num)) return '$0.00';
+         return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     },
 
     // Mostrar toast
