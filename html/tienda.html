@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -105,7 +105,7 @@
                      data-id="${p.id}" data-categoria="${p.categoria}"
                      onclick="openModal(${p.id})">
                     <div class="product-img" style="background:linear-gradient(135deg,rgba(206,134,144,0.18),rgba(110,34,54,0.1))">
-                        ${p.imagen ? `<img src="../${p.imagen.replace(/^\//, '')}" alt="${p.nombre}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" onerror="this.style.display='none';this.parentNode.innerHTML+='${p.emoji}'">` : p.emoji}
+                        ${p.imagen ? `<img src="../${p.imagen.replace(/^\//, '')}" alt="${p.nombre}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" onerror="this.style.display='none';this.nextSibling && this.nextSibling.remove();var s=document.createElement('span');s.textContent='${p.emoji}';s.style.fontSize='64px';this.parentNode.appendChild(s);">` : p.emoji}
                         ${p.otorga_tamalbit == 1 ? '<span class="tamalbit-tag">✦ Gana Tamalbits</span>' : ''}
                     </div>
                     <div class="product-body">
