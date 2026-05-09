@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -28,17 +28,17 @@
                     <div class="form-card-icon">✎</div>
                     <div>
                         <div class="form-card-title">Nuevo gasto</div>
-                        <div class="form-card-sub">El monto se descontará vía la API bank</div>
+                        <div class="form-card-sub">El monto se descontará de tu saldo disponible</div>
                     </div>
                 </div>
                 <div class="form-body">
                     <div class="field">
                         <label class="field-label">Usuario</label>
-                        <input type="text" id="campo-usuario" value="María R.">
+                        <input type="text" id="campo-usuario" value="" readonly style="background:#f5f5f5;color:#888;">
                     </div>
                     <div class="field">
                         <label class="field-label">Producto</label>
-                        <select id="campo-producto" onchange="verificarTamalbit()">
+                        <select id="campo-producto" onchange="alSeleccionarProducto()">
                             <option value="">Selecciona un producto...</option>
                         </select>
                         <div class="tamalbit-notice" id="tamalbit-notice">
@@ -55,23 +55,6 @@
                         <div class="saldo-warning" id="saldo-warning">
                             <span>⚠️</span>
                             <span class="sw-text">El monto supera el saldo disponible.</span>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Categoría</label>
-                        <div class="cat-grid-form">
-                            <div class="cat-option selected" data-cat="alimentacion" onclick="seleccionarCat(this)">
-                                <span class="co-label">Alimentación</span><span class="co-check">✓</span>
-                            </div>
-                            <div class="cat-option" data-cat="servicios" onclick="seleccionarCat(this)">
-                                <span class="co-label">Servicios públicos</span><span class="co-check">✓</span>
-                            </div>
-                            <div class="cat-option" data-cat="transporte" onclick="seleccionarCat(this)">
-                                <span class="co-label">Transporte</span><span class="co-check">✓</span>
-                            </div>
-                            <div class="cat-option" data-cat="otros" onclick="seleccionarCat(this)">
-                                <span class="co-label">Otros</span><span class="co-check">✓</span>
-                            </div>
                         </div>
                     </div>
                     <div class="field-row">
@@ -131,15 +114,18 @@
         document.getElementById('campo-hora').value = ahora.toTimeString().slice(0, 5);
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // Mostrar nombre del usuario actual
+            document.getElementById('campo-usuario').value = APP.currentUser;
+
             saldo = await APP.getSaldo();
             document.getElementById('saldo-pill').textContent = APP.formatCurrency(saldo);
             document.getElementById('sd-saldo').textContent = APP.formatCurrency(saldo);
-            actualizarPreview();
+            document.getElementById('sd-after').textContent = APP.formatCurrency(saldo);
             await cargarProductos();
         });
 
         async function cargarProductos() {
-            const res = await fetch('api/productos.php');
+            const res = await fetch('../api/productos.php');
             const productos = await res.json();
             const select = document.getElementById('campo-producto');
             productos.forEach(p => {
@@ -147,26 +133,26 @@
                 opt.value = p.id;
                 opt.dataset.precio = p.precio;
                 opt.dataset.tamalbit = p.otorga_tamalbit;
-                opt.textContent = `${p.emoji} ${p.nombre} - $${parseFloat(p.precio).toFixed(2)}`;
+                opt.textContent = `${p.emoji} ${p.nombre} - $${parseFloat(p.precio).toLocaleString('es-CO')}`;
                 select.appendChild(opt);
             });
         }
 
-        function actualizarPreview() {
-            const productoSelect = document.getElementById('campo-producto');
-            const montoManual = parseFloat(document.getElementById('campo-monto').value) || 0;
-            let monto = montoManual;
-            
-            // Si no hay monto manual, usar precio del producto seleccionado
-            if (!montoManual && productoSelect.selectedIndex > 0) {
-                monto = parseFloat(productoSelect.options[productoSelect.selectedIndex].dataset.precio);
+        function alSeleccionarProducto() {
+            const select = document.getElementById('campo-producto');
+            if (select.selectedIndex > 0) {
+                const precio = select.options[select.selectedIndex].dataset.precio;
+                document.getElementById('campo-monto').value = precio;
             }
-            
+            actualizarPreview();
+        }
+
+        function actualizarPreview() {
+            const monto = parseFloat(document.getElementById('campo-monto').value) || 0;
             const restante = saldo - monto;
             document.getElementById('sd-monto').textContent = `— ${APP.formatCurrency(monto)}`;
             document.getElementById('sd-after').textContent = restante >= 0 ? APP.formatCurrency(restante) : APP.formatCurrency(0);
             document.getElementById('sd-after').style.color = restante < 0 ? 'var(--error)' : 'var(--rhodo)';
-            
             document.getElementById('saldo-warning').classList.toggle('visible', monto > saldo);
             document.getElementById('btn-submit').disabled = monto > saldo || monto <= 0;
             verificarTamalbit();
@@ -174,13 +160,12 @@
 
         function verificarTamalbit() {
             const productoSelect = document.getElementById('campo-producto');
-            const monto = parseFloat(document.getElementById('campo-monto').value) || 
-                         (productoSelect.selectedIndex > 0 ? parseFloat(productoSelect.options[productoSelect.selectedIndex].dataset.precio) : 0);
+            const monto = parseFloat(document.getElementById('campo-monto').value) || 0;
             const otorga = productoSelect.selectedIndex > 0 && productoSelect.options[productoSelect.selectedIndex].dataset.tamalbit == '1';
-            
+
             const notice = document.getElementById('tamalbit-notice');
             const panel = document.getElementById('panel-tamalbits');
-            
+
             if (otorga && monto > 0) {
                 const tb = Math.floor(monto / 10);
                 document.getElementById('tb-preview').textContent = tb;
@@ -193,30 +178,22 @@
             }
         }
 
-        function seleccionarCat(el) {
-            document.querySelectorAll('.cat-option').forEach(o => o.classList.remove('selected'));
-            el.classList.add('selected');
-        }
-
         function limpiarFormulario() {
             document.getElementById('campo-producto').selectedIndex = 0;
             document.getElementById('campo-monto').value = '';
             document.getElementById('campo-descripcion').value = '';
-            document.querySelectorAll('.cat-option').forEach((o, i) => o.classList.toggle('selected', i === 0));
             actualizarPreview();
         }
 
         async function registrarGasto() {
-            const usuario = document.getElementById('campo-usuario').value.trim();
             const productoSelect = document.getElementById('campo-producto');
             const producto_id = productoSelect.value;
-            const monto = parseFloat(document.getElementById('campo-monto').value) || 
+            const monto = parseFloat(document.getElementById('campo-monto').value) ||
                          (productoSelect.selectedIndex > 0 ? parseFloat(productoSelect.options[productoSelect.selectedIndex].dataset.precio) : 0);
-            const categoria = document.querySelector('.cat-option.selected')?.dataset.cat || 'alimentacion';
             const descripcion = document.getElementById('campo-descripcion').value.trim();
 
-            if (!usuario || !producto_id || !monto) {
-                APP.showToast('Completa todos los campos obligatorios.', 'warning');
+            if (!producto_id || !monto) {
+                APP.showToast('Selecciona un producto e ingresa el monto.', 'warning');
                 return;
             }
 
@@ -225,14 +202,20 @@
             btn.innerHTML = 'Procesando...';
 
             try {
-                const res = await fetch('api/gasto.php', {
+                const res = await fetch('../api/gasto.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ producto_id, usuario, descripcion, monto, categoria })
+                    body: JSON.stringify({
+                        producto_id,
+                        usuario_documento: APP.currentDocumento,
+                        descripcion
+                    })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    APP.showToast('✓ Gasto registrado exitosamente.', 'success');
+                    let msg = '✓ Gasto registrado exitosamente.';
+                    if (data.tamalbits > 0) msg += ` +${data.tamalbits} Tamalbit(s) ✦`;
+                    APP.showToast(msg, 'success');
                     saldo = data.nuevo_saldo;
                     document.getElementById('saldo-pill').textContent = APP.formatCurrency(saldo);
                     document.getElementById('sd-saldo').textContent = APP.formatCurrency(saldo);

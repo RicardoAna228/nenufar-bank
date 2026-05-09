@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -23,7 +23,7 @@
 
         <div class="summary-bar">
             <div class="sum-card highlight">
-                <div class="sum-label">Saldo actual (API)</div>
+                <div class="sum-label">Saldo actual</div>
                 <div class="sum-val" id="saldo-actual">$0.00</div>
                 <div class="sum-sub">En tiempo real</div>
             </div>
@@ -64,9 +64,8 @@
     <script src="../js/main.js"></script>
     <script>
         let todosGastos = [];
-        const catIcons = { alimentacion: '🍽️', servicios: '⚡', transporte: '🚌', otros: '📦' };
-        const catBadges = { alimentacion: 'cb-food', servicios: 'cb-serv', transporte: 'cb-trans', otros: 'cb-other' };
-        const catEmojis = { alimentacion: '🍽️', servicios: '⚡', transporte: '🚌', otros: '📦' };
+        const catBadges = { comida: 'cb-food', tecnologia: 'cb-serv', hogar: 'cb-trans', ropa: 'cb-other' };
+        const catEmojis = { comida: '🍔', tecnologia: '🎧', hogar: '💡', ropa: '👕' };
 
         document.addEventListener('DOMContentLoaded', async () => {
             await cargarDatos();
@@ -78,8 +77,8 @@
                 const saldo = await APP.getSaldo();
                 document.getElementById('saldo-actual').textContent = APP.formatCurrency(saldo);
 
-                // Estadísticas
-                const statsRes = await fetch(`api/estadisticas.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                // Estadísticas con usuario_documento
+                const statsRes = await fetch(`../api/estadisticas.php?usuario_documento=${APP.currentDocumento}`);
                 const stats = await statsRes.json();
                 document.getElementById('total-mes').textContent = APP.formatCurrency(stats.total_mes);
                 document.getElementById('num-transacciones').textContent = stats.transacciones;
@@ -88,13 +87,13 @@
                     document.getElementById('mayor-gasto-nombre').textContent = stats.mayor_gasto.nombre;
                 }
 
-                // Tamalbits
-                const tbRes = await fetch(`api/tamalbits.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                // Tamalbits con usuario_documento
+                const tbRes = await fetch(`../api/tamalbits.php?usuario_documento=${APP.currentDocumento}`);
                 const tbData = await tbRes.json();
                 document.getElementById('total-tamalbits').textContent = `${tbData.total} ✦`;
 
-                // Historial
-                const histRes = await fetch(`api/historial.php?usuario=${encodeURIComponent(APP.currentUser)}`);
+                // Historial con usuario_documento
+                const histRes = await fetch(`../api/historial.php?usuario_documento=${APP.currentDocumento}`);
                 todosGastos = await histRes.json();
                 renderizarGastos(todosGastos);
 
@@ -109,6 +108,7 @@
                 body.innerHTML = '<p style="padding:24px;text-align:center;color:#aaa;">No se encontraron gastos.</p>';
                 return;
             }
+            const cat = (c) => (c || '').toLowerCase();
             body.innerHTML = gastos.map(g => `
                 <div class="et-row">
                     <div class="et-icon">${g.emoji}</div>
@@ -116,7 +116,7 @@
                         <div class="et-name">${g.nombre}</div>
                         <div class="et-desc">${g.descripcion || 'Sin descripción'} · ${APP.currentUser}</div>
                     </div>
-                    <div><span class="cat-badge ${catBadges[g.categoria]}">${catEmojis[g.categoria]} ${APP.ucfirst(g.categoria)}</span></div>
+                    <div><span class="cat-badge ${catBadges[cat(g.categoria)] || ''}">${catEmojis[cat(g.categoria)] || '📦'} ${g.categoria_nombre || APP.ucfirst(g.categoria)}</span></div>
                     <div class="et-date">${APP.formatDate(g.fecha)}</div>
                     <div class="et-amount">${APP.formatCurrency(g.monto)}</div>
                     <div>${g.tamalbits_ganados > 0 ? `<span class="tb-pill">✦ +${g.tamalbits_ganados}</span>` : '—'}</div>
@@ -126,8 +126,8 @@
 
         function filtrarGastos() {
             const busqueda = document.getElementById('search-input').value.toLowerCase();
-            const filtrados = todosGastos.filter(g => 
-                g.nombre.toLowerCase().includes(busqueda) || 
+            const filtrados = todosGastos.filter(g =>
+                g.nombre.toLowerCase().includes(busqueda) ||
                 (g.descripcion && g.descripcion.toLowerCase().includes(busqueda))
             );
             renderizarGastos(filtrados);

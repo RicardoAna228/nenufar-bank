@@ -3,16 +3,17 @@
 // ============================================
 
 const APP = {
-    // Usuario actual (simulado)
-    currentUser: 'María R.',
-    
+    // Usuario actual (debe coincidir con la BD)
+    currentUser: 'Nicol Ocampo',
+    currentDocumento: '1094899647',
+
     // URL base de la API interna de PHP
-    apiBase: 'api/',
-    
+    apiBase: window.location.pathname.includes('/html/') ? '../api/' : 'api/',
+
     // Obtener saldo actual
     async getSaldo() {
         try {
-            const response = await fetch(this.apiBase + 'saldo.php');
+            const response = await fetch(this.apiBase + 'saldo.php?usuario_documento=' + this.currentDocumento);
             const data = await response.json();
             return data.saldo || 0;
         } catch (error) {
@@ -20,12 +21,12 @@ const APP = {
             return 0;
         }
     },
-    
+
     // Formatear moneda
     formatCurrency(amount) {
         return '$' + parseFloat(amount).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     },
-    
+
     // Mostrar toast
     showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
@@ -35,19 +36,19 @@ const APP = {
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3500);
     },
-    
+
     // Capitalizar primera letra
     ucfirst(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     },
-    
+
     // Formatear fecha relativa
     formatDate(dateString) {
         const fecha = new Date(dateString);
         const hoy = new Date();
         const ayer = new Date(hoy);
         ayer.setDate(ayer.getDate() - 1);
-        
+
         if (fecha.toDateString() === hoy.toDateString()) {
             return 'Hoy, ' + fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
         } else if (fecha.toDateString() === ayer.toDateString()) {
@@ -101,6 +102,10 @@ async function loadSidebar() {
             if (logoImg) {
                 logoImg.src = appRoot + 'images/logo.png';
             }
+
+            // Mostrar nombre del usuario real en el sidebar
+            const userNameEl = sidebarContainer.querySelector('.user-name, .nombre-usuario, [class*="user"] span, [class*="nombre"]');
+            if (userNameEl) userNameEl.textContent = APP.currentUser;
         }
     } catch (error) {
         console.error('Error al cargar sidebar:', error);

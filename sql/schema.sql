@@ -1,3 +1,5 @@
+DROP DATABASE nenufar_bank;
+
 CREATE DATABASE nenufar_bank;
 
 USE nenufar_bank;
@@ -46,15 +48,16 @@ VALUES
 -- CATEGORIAS
 INSERT INTO categorias (nombre)
 VALUES
-('Comida'),
-('Tecnologia'),
-('Hogar'),
-('Ropa');
+('Alimentación'),
+('Servicios públicos'),
+('Transporte'),
+('Otros');
+
 
 -- PRODUCTOS
 INSERT INTO productos (imagen, nombre, descripcion, precio, id_categoria, activo)
 VALUES
 ('/images/Hamburguesa.jpg', 'Hamburguesa', 'Hamburguesa doble carne', 18000, 1, TRUE),
-('/images/audifonos.jpg', 'Audifonos Bluetooth', 'Audifonos inalambricos', 95000, 2, TRUE),
-('/images/lampara.jpg', 'Lampara LED', 'Lampara para escritorio', 45000, 3, TRUE),
-('/images/camisa_negra.png','Camiseta Negra', 'Camiseta algodon unisex', 35000, 4, TRUE);
+('/images/audifonos.jpg', 'Audifonos Bluetooth', 'Audifonos inalambricos', 95000, 4, TRUE),
+('/images/lampara.jpg', 'Lampara LED', 'Lampara para escritor;io', 45000, 4, TRUE),
+('/images/camisa_negra.jpg','Camiseta Negra', 'Camiseta algodon unisex', 35000, 4, TRUE);

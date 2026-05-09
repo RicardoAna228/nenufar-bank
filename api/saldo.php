@@ -1,26 +1,23 @@
 <?php
-// GET /api/saldo.php - Obtener saldo de la API bancaria
+// GET /api/saldo.php - Obtener saldo del usuario desde la BD
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
+require_once '../config/db.php';
 
-$api_base_url = 'http://localhost:8083';
+$usuario_documento = $_GET['usuario_documento'] ?? '1094899647';
 
-$ch = curl_init($api_base_url . '/saldo');
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 10,
-    CURLOPT_HTTPHEADER => ['Accept: application/json']
-]);
+$stmt = $pdo->prepare("SELECT saldo, nombre FROM usuarios WHERE documento = ?");
+$stmt->execute([$usuario_documento]);
+$usuario = $stmt->fetch();
 
-$response = curl_exec($ch);
-$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-if ($response === false || $http_code !== 200) {
-    http_response_code(502);
-    echo json_encode(['saldo' => 0, 'error' => 'No se pudo conectar con la API bancaria']);
+if (!$usuario) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Usuario no encontrado']);
     exit;
 }
 
-echo $response;
+echo json_encode([
+    'saldo'  => $usuario['saldo'],
+    'nombre' => $usuario['nombre']
+]);
 ?>

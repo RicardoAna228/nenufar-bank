@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -24,10 +24,10 @@
 
         <div class="filters">
             <button class="filter-btn active" data-filter="todos">Todos</button>
-            <button class="filter-btn" data-filter="alimentacion">Alimentación</button>
-            <button class="filter-btn" data-filter="servicios">Servicios públicos</button>
-            <button class="filter-btn" data-filter="transporte">Transporte</button>
-            <button class="filter-btn" data-filter="otros">Otros</button>
+            <button class="filter-btn" data-filter="comida">Alimentación</button>
+            <button class="filter-btn" data-filter="tecnologia">Tecnología</button>
+            <button class="filter-btn" data-filter="hogar">Hogar</button>
+            <button class="filter-btn" data-filter="ropa">Ropa</button>
         </div>
 
         <div class="products-grid" id="products-grid"></div>
@@ -53,10 +53,6 @@
             </div>
             <div class="modal-tamalbit-info" id="m-tamalbit-info" style="display:none;">
                 ✦ Este plato otorga 1 Tamalbit por cada $10 gastados
-            </div>
-            <div class="modal-input-group">
-                <label>Usuario</label>
-                <input type="text" id="modal-usuario" value="María R." placeholder="Tu nombre">
             </div>
             <div class="modal-input-group">
                 <label>Descripción (opcional)</label>
@@ -90,7 +86,7 @@
 
         async function cargarProductos() {
             try {
-                const res = await fetch('api/productos.php');
+                const res = await fetch('../api/productos.php');
                 productos = await res.json();
                 renderizarProductos(productos);
             } catch (error) {
@@ -100,20 +96,24 @@
 
         function renderizarProductos(lista) {
             const grid = document.getElementById('products-grid');
+            if (!lista || lista.length === 0) {
+                grid.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px;">No hay productos disponibles.</p>';
+                return;
+            }
             grid.innerHTML = lista.map(p => `
                 <div class="product-card ${p.otorga_tamalbit == 1 ? 'featured' : ''}" 
                      data-id="${p.id}" data-categoria="${p.categoria}"
                      onclick="openModal(${p.id})">
                     <div class="product-img" style="background:linear-gradient(135deg,rgba(206,134,144,0.18),rgba(110,34,54,0.1))">
-                        ${p.emoji}
+                        ${p.imagen ? `<img src="../${p.imagen.replace(/^\//, '')}" alt="${p.nombre}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" onerror="this.style.display='none';this.parentNode.innerHTML+='${p.emoji}'">` : p.emoji}
                         ${p.otorga_tamalbit == 1 ? '<span class="tamalbit-tag">✦ Gana Tamalbits</span>' : ''}
                     </div>
                     <div class="product-body">
-                        <div class="product-cat">${APP.ucfirst(p.categoria)}</div>
+                        <div class="product-cat">${p.categoria_nombre}</div>
                         <div class="product-name">${p.nombre}</div>
                         <div class="product-desc">${p.descripcion}</div>
                         <div class="product-footer">
-                            <div class="product-price"><span>$</span>${parseFloat(p.precio).toFixed(2)}</div>
+                            <div class="product-price"><span>$</span>${parseFloat(p.precio).toLocaleString('es-CO')}</div>
                             <button class="buy-btn" onclick="event.stopPropagation(); openModal(${p.id})">Comprar</button>
                         </div>
                     </div>
@@ -127,7 +127,7 @@
 
             document.getElementById('m-emoji').textContent = productoSeleccionado.emoji;
             document.getElementById('m-name').textContent = productoSeleccionado.nombre;
-            document.getElementById('m-cat').textContent = APP.ucfirst(productoSeleccionado.categoria);
+            document.getElementById('m-cat').textContent = productoSeleccionado.categoria_nombre;
             document.getElementById('m-desc').textContent = productoSeleccionado.descripcion;
             document.getElementById('m-price').textContent = APP.formatCurrency(productoSeleccionado.precio);
             document.getElementById('m-saldo').textContent = APP.formatCurrency(saldoActual);
@@ -147,23 +147,15 @@
             btn.disabled = true;
             btn.innerHTML = 'Procesando...';
 
-            const usuario = document.getElementById('modal-usuario').value.trim();
             const descripcion = document.getElementById('modal-descripcion').value.trim();
 
-            if (!usuario) {
-                APP.showToast('⚠️ Debes ingresar un nombre de usuario.', 'warning');
-                btn.disabled = false;
-                btn.innerHTML = 'Confirmar pago';
-                return;
-            }
-
             try {
-                const res = await fetch('api/gasto.php', {
+                const res = await fetch('../api/gasto.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         producto_id: productoSeleccionado.id,
-                        usuario: usuario,
+                        usuario_documento: APP.currentDocumento,
                         descripcion: descripcion
                     })
                 });
@@ -173,11 +165,9 @@
                     let msg = '✓ ¡Compra exitosa!';
                     if (data.tamalbits > 0) msg += ` +${data.tamalbits} Tamalbit(s) ✦`;
                     APP.showToast(msg, 'success');
-                    
-                    // Actualizar saldo
                     saldoActual = data.nuevo_saldo;
                     document.getElementById('saldo-pill').textContent = APP.formatCurrency(saldoActual);
-                    
+                    document.getElementById('m-saldo').textContent = APP.formatCurrency(saldoActual);
                     setTimeout(closeModal, 1500);
                 } else {
                     APP.showToast(data.message || 'Error al procesar la compra.', 'error');
@@ -196,9 +186,9 @@
                     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     const filter = btn.dataset.filter;
-                    const filtrados = filter === 'todos' 
-                        ? productos 
-                        : productos.filter(p => p.categoria === filter);
+                    const filtrados = filter === 'todos'
+                        ? productos
+                        : productos.filter(p => p.categoria.toLowerCase() === filter);
                     renderizarProductos(filtrados);
                 });
             });

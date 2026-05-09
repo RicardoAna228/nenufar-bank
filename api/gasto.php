@@ -12,13 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-// Validar datos
-$producto_id = $input['producto_id'] ?? 0;
-$usuario_documento = trim($input['usuario_documento'] ?? '1094899647'); // Documento por defecto
-$descripcion = isset($input['descripcion']) ? trim($input['descripcion']) : null;
+$producto_id       = $input['producto_id'] ?? 0;
+$usuario_documento = trim($input['usuario_documento'] ?? '1094899647');
+$descripcion       = isset($input['descripcion']) ? trim($input['descripcion']) : null;
 
-// Verificar que el usuario existe
-$stmt = $pdo->prepare("SELECT documento, nombre FROM usuarios WHERE documento = ?");
+// Verificar que el usuario existe y traer su saldo
+$stmt = $pdo->prepare("SELECT documento, nombre, saldo FROM usuarios WHERE documento = ?");
 $stmt->execute([$usuario_documento]);
 $usuario = $stmt->fetch();
 
@@ -44,83 +43,62 @@ if (!$producto) {
     exit;
 }
 
-// Verificar saldo vía API antes de proceder
-$api_base = 'http://localhost:8083';
-$ch = curl_init($api_base . '/saldo');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-$saldo_response = curl_exec($ch);
-curl_close($ch);
-$saldo_data = json_decode($saldo_response, true);
-$saldo_disponible = $saldo_data['saldo'] ?? 0;
+// Verificar saldo directamente desde la BD (ya no necesitamos el puerto 8083)
+$saldo_disponible = $usuario['saldo'];
 
 if ($saldo_disponible < $producto['precio']) {
     echo json_encode([
-        'success' => false, 
+        'success' => false,
         'message' => 'Saldo insuficiente. Disponible: $' . number_format($saldo_disponible, 2)
     ]);
     exit;
 }
 
-// Llamar a la API para descontar
-$ch = curl_init($api_base . '/gasto');
-curl_setopt_array($ch, [
-    CURLOPT_POST => 1,
-    CURLOPT_POSTFIELDS => json_encode(['monto' => $producto['precio']]),
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-    CURLOPT_TIMEOUT => 10
-]);
-$api_response = curl_exec($ch);
-$api_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-
-if ($api_response === false || $api_http_code !== 200) {
-    echo json_encode(['success' => false, 'message' => 'La API bancaria rechazó la operación']);
-    exit;
-}
-
-// Registrar en base de datos
+// Registrar en base de datos y descontar saldo en una sola transacción
 try {
     $pdo->beginTransaction();
-    
-    // Calcular tamalbits si el producto los otorga
+
+    // Calcular tamalbits (regla: si el nombre del producto contiene "oreja")
     $tamalbits_ganados = 0;
-    $nombre_lower = strtolower($producto['nombre']);
-    if (strpos($nombre_lower, 'oreja') !== false) {
+    if (strpos(strtolower($producto['nombre']), 'oreja') !== false) {
         $tamalbits_ganados = floor($producto['precio'] / 10);
     }
-    
-    // Insertar gasto (usando tu schema)
+
+    // Insertar gasto
     $stmt = $pdo->prepare("
         INSERT INTO gastos (id_usuario, id_producto, monto, descripcion, tamalbits_ganados) 
         VALUES (?, ?, ?, ?, ?)
     ");
     $stmt->execute([
-        $usuario_documento, 
-        $producto['id'], 
-        $producto['precio'], 
-        $descripcion, 
+        $usuario_documento,
+        $producto['id'],
+        $producto['precio'],
+        $descripcion,
         $tamalbits_ganados
     ]);
     $gasto_id = $pdo->lastInsertId();
-    
-    // Actualizar tamalbits del usuario en tabla usuarios
+
+    // Descontar saldo del usuario
+    $stmt = $pdo->prepare("UPDATE usuarios SET saldo = saldo - ? WHERE documento = ?");
+    $stmt->execute([$producto['precio'], $usuario_documento]);
+
+    // Sumar tamalbits si aplica
     if ($tamalbits_ganados > 0) {
         $stmt = $pdo->prepare("UPDATE usuarios SET tamalbits = tamalbits + ? WHERE documento = ?");
         $stmt->execute([$tamalbits_ganados, $usuario_documento]);
     }
-    
+
     $pdo->commit();
-    
+
     echo json_encode([
-        'success' => true,
-        'message' => 'Gasto registrado exitosamente',
-        'gasto_id' => $gasto_id,
-        'tamalbits' => $tamalbits_ganados,
+        'success'     => true,
+        'message'     => 'Gasto registrado exitosamente',
+        'gasto_id'    => $gasto_id,
+        'tamalbits'   => $tamalbits_ganados,
         'nuevo_saldo' => $saldo_disponible - $producto['precio'],
-        'usuario' => $usuario['nombre']
+        'usuario'     => $usuario['nombre']
     ]);
-    
+
 } catch (Exception $e) {
     $pdo->rollBack();
     http_response_code(500);
