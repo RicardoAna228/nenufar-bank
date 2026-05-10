@@ -1,13 +1,13 @@
 <?php
 // Nenúfar Bank - Configuración de base de datos
-define('DB_HOST', '127.0.0.1');
+define('DB_HOST', 'localhost');
 define('DB_NAME', 'nenufar_bank');
-define('DB_USER', 'nenufar');      // Cambia si usas otro usuario
-define('DB_PASS', '');          // Cambia si tienes contraseña
+define('DB_USER', 'root');      // Cambia si usas otro usuario
+define('DB_PASS', ''); 
 
 try {
     $pdo = new PDO(
-        "mysql:host=127.0.0.1;port=3307;dbname=" . DB_NAME . ";charset=utf8mb4",
+        "mysql:host=localhost;port=3306;dbname=" . DB_NAME . ";charset=utf8mb4",
         DB_USER,
         DB_PASS,
         [
