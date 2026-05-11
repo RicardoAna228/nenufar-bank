@@ -88,6 +88,13 @@ async function loadSidebar() {
         
         sidebarContainer.innerHTML = html;
 
+        const logoImg = sidebarContainer.querySelector('.logo-icon');
+        if (logoImg) {
+            logoImg.src = window.location.pathname.includes('/html/')
+                ? '../images/logo.png'
+                : 'images/logo.png';
+        }
+
         const pathSegments = window.location.pathname.split('/');
         const htmlIndex = pathSegments.indexOf('html');
         const appRoot = htmlIndex !== -1

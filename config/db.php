@@ -7,7 +7,7 @@ define('DB_PASS', '');
 
 try {
     $pdo = new PDO(
-        "mysql:host=localhost;port=3306;dbname=" . DB_NAME . ";charset=utf8mb4",
+        "mysql:host=localhost;port=3307;dbname=" . DB_NAME . ";charset=utf8mb4",
         DB_USER,
         DB_PASS,
         [

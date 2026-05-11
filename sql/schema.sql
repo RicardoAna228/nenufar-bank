@@ -42,7 +42,7 @@ CREATE TABLE gastos (
 
 -- Usuario con saldo inicial
 INSERT INTO usuarios (documento, nombre, email, password, saldo, tamalbits)
-VALUES ('1094899647', 'Nicol Ocampo', 'nicol@example.com', '123456', 500000.00, 150);
+VALUES ('1094899647', 'Nicol Ocampo', 'nicol@example.com', '123456', 500000.00, 0);
 
 -- Categorías que el frontend espera
 INSERT INTO categorias (nombre) VALUES
@@ -58,3 +58,6 @@ VALUES
 ('images/audifonos.jpg',     'Audifonos Bluetooth',  'Audifonos inalambricos',       95000, 2, TRUE),
 ('images/lampara.jpg',       'Lampara LED',          'Lampara para escritorio',      45000, 3, TRUE),
 ('images/camisa_negra.jpg',  'Camiseta Negra',       'Camiseta algodón unisex',      35000, 4, TRUE);
+-- Orejas de Pollo (el que activa Tamalbits)
+INSERT INTO productos (imagen, nombre, descripcion, precio, id_categoria, activo)
+VALUES ('/images/orejas de pollo.jpg', 'Orejas de Pollo', 'Plato especial — por cada $10 gastados recibes 1 Tamalbit', 25000, 1, TRUE);

@@ -6,8 +6,8 @@ require_once '../config/db.php';
 
 $usuario_documento = $_GET['usuario_documento'] ?? '1094899647';
 
-// Total de tamalbits del usuario (de la tabla usuarios)
-$stmt = $pdo->prepare("SELECT tamalbits, nombre FROM usuarios WHERE documento = ?");
+// Verificar que el usuario existe y traer su nombre
+$stmt = $pdo->prepare("SELECT nombre FROM usuarios WHERE documento = ?");
 $stmt->execute([$usuario_documento]);
 $usuario = $stmt->fetch();
 
@@ -16,6 +16,11 @@ if (!$usuario) {
     echo json_encode(['error' => 'Usuario no encontrado']);
     exit;
 }
+
+// Total de tamalbits ganados por el usuario según gastos reales
+$stmt = $pdo->prepare("SELECT COALESCE(SUM(tamalbits_ganados), 0) AS total FROM gastos WHERE id_usuario = ?");
+$stmt->execute([$usuario_documento]);
+$totalTamalbits = (int) $stmt->fetchColumn();
 
 // Historial de tamalbits ganados (de la tabla gastos)
 $stmt = $pdo->prepare("
@@ -55,7 +60,7 @@ $historial_resultado = array_map(function($h) use ($emojis_por_categoria) {
 }, $historial);
 
 echo json_encode([
-    'total' => $usuario['tamalbits'],
+    'total' => $totalTamalbits,
     'nombre' => $usuario['nombre'],
     'historial' => $historial_resultado
 ]);
