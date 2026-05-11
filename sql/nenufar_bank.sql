@@ -1,3 +1,4 @@
+SELECT * FROM nenufar_bank.productos;
 DROP DATABASE nenufar_bank;
 
 CREATE DATABASE nenufar_bank;
@@ -49,17 +50,17 @@ VALUES
 INSERT INTO categorias (nombre)
 VALUES
 ('Alimentación'),
-('Servicios públicos'),
-('Transporte'),
-('Otros');
+('Tecnología'),
+('Hogar'),
+('Ropa');
 
 
 -- PRODUCTOS
 INSERT INTO productos (imagen, nombre, descripcion, precio, id_categoria, activo)
 VALUES
 ('/images/Hamburguesa.jpg', 'Hamburguesa', 'Hamburguesa doble carne', 18000, 1, TRUE),
-('/images/audifonos.jpg', 'Audifonos Bluetooth', 'Audifonos inalambricos', 95000, 4, TRUE),
-('/images/lampara.jpg', 'Lampara LED', 'Lampara para escritor;io', 45000, 4, TRUE),
+('/images/audifonos.jpg', 'Audifonos Bluetooth', 'Audifonos inalambricos', 95000, 2, TRUE),
+('/images/lampara.jpg', 'Lampara LED', 'Lampara para escritor;io', 45000, 3, TRUE),
 ('/images/camisa_negra.jpg','Camiseta Negra', 'Camiseta algodon unisex', 35000, 4, TRUE);
 
 SELECT*FROM categorias;
@@ -70,3 +71,6 @@ select*FROM gastos;
 ALTER TABLE usuarios ADD COLUMN saldo DECIMAL(10,2) DEFAULT 500000.00;
 UPDATE usuarios SET saldo = 500000.00 WHERE documento = '1094899647';
 
+-- Orejas de Pollo (el que activa Tamalbits)
+INSERT INTO productos (imagen, nombre, descripcion, precio, id_categoria, activo)
+VALUES ('/images/orejas de pollo.jpg', 'Orejas de Pollo', 'Plato especial — por cada $10 gastados recibes 1 Tamalbit', 25000, 1, TRUE);

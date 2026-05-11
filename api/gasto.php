@@ -43,7 +43,7 @@ if (!$producto) {
     exit;
 }
 
-// Verificar saldo directamente desde la BD (ya no necesitamos el puerto 8083)
+// Verificar saldo directamente desde la BD
 $saldo_disponible = $usuario['saldo'];
 
 if ($saldo_disponible < $producto['precio']) {
@@ -58,10 +58,14 @@ if ($saldo_disponible < $producto['precio']) {
 try {
     $pdo->beginTransaction();
 
-    // Calcular tamalbits (regla: si el nombre del producto contiene "oreja")
+    // ✅ CORREGIDO: Calcular tamalbits
+    // Regla: 1 Tamalbit por cada $25,000 gastados en Orejas de Pollo
     $tamalbits_ganados = 0;
-    if (strpos(strtolower($producto['nombre']), 'oreja') !== false) {
-        $tamalbits_ganados = floor($producto['precio'] / 10);
+    $nombre_lower = strtolower($producto['nombre']);
+    
+    if (strpos($nombre_lower, 'oreja') !== false) {
+        // Dividir el precio entre 25000 para obtener los Tamalbits
+        $tamalbits_ganados = floor($producto['precio'] / 25000);
     }
 
     // Insertar gasto
